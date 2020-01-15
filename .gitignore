@@ -1,0 +1,15 @@
+/Debug
+/Release
+.vscode
+.settings
+
+*.a
+*.o
+*.obj
+*.hex
+*.bin
+*.out
+*.map
+*.list
+*.elf
+
