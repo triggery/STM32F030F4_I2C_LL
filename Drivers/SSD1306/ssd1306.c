@@ -1,70 +1,68 @@
 #include"ssd1306.h"
 
+void ssd1306_Buff_Write_LL_I2C(I2C_TypeDef *I2Cx, uint32_t SlaveAddr, uint8_t MemAddress, uint8_t *pData, uint16_t XferCount);
+void delaySymple(void);
+
 // Screenbuffer
 static uint8_t SSD1306_Buffer[SSD1306_WIDTH * SSD1306_HEIGHT / 8];
 
 // Screen object
 static SSD1306_t SSD1306;
 
-//
-//  Send a byte to the command register
-//
-static void ssd1306_WriteCommand(uint8_t command) {
+void ssd1306_Buff_Write_LL_I2C(I2C_TypeDef *I2Cx, uint32_t SlaveAddr, uint8_t MemAddress, uint8_t *pData, uint16_t XferCount) {
 
-	LL_I2C_HandleTransfer(I2C1, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, 1, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_START_WRITE);
-	while(!(LL_I2C_IsActiveFlag_TXE(I2C1)));
-	LL_I2C_TransmitData8(I2C1, (uint8_t)0x00);
-	while(!(LL_I2C_IsActiveFlag_TCR(I2C1)));
-
-	LL_I2C_HandleTransfer(I2C1, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, 1, LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_NOSTARTSTOP);
-	while(!(LL_I2C_IsActiveFlag_TXE(I2C1)));
-	LL_I2C_TransmitData8(I2C1, command);
-	while(!(LL_I2C_IsActiveFlag_STOP(I2C1)));
-	LL_I2C_ClearFlag_STOP(I2C1);
-}
-
-void LL_I2C_BUFF_WRITE(I2C_TypeDef *I2Cx, uint32_t SlaveAddr, uint8_t *pData, uint16_t XferCount) {
-
-	LL_I2C_HandleTransfer(I2C1, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, 1, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_START_WRITE);
-	while(!(LL_I2C_IsActiveFlag_TXE(I2C1)));
-	LL_I2C_TransmitData8(I2C1, (uint8_t)0x40);
-	while(!(LL_I2C_IsActiveFlag_TCR(I2C1)));
+	/* Send Slave Address and Memory Address */
+	LL_I2C_HandleTransfer(I2Cx, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, 1, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_START_WRITE);
+	while(!(LL_I2C_IsActiveFlag_TXE(I2Cx)));
+	LL_I2C_TransmitData8(I2Cx,  MemAddress);
+	while(!(LL_I2C_IsActiveFlag_TCR(I2Cx)));
 
 	uint8_t *pBuffPtr = pData;
 	uint16_t allSize = XferCount;
 	uint16_t packetSendSize;
+	/* Set NBYTES to write and reload if hi2c->XferCount > MAX_NBYTE_SIZE */
 	if ( allSize > 255U ) {
 		packetSendSize = 255U;
-		LL_I2C_HandleTransfer(I2C1, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_NOSTARTSTOP);
+		LL_I2C_HandleTransfer(I2Cx, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_NOSTARTSTOP);
 	}
 	else {
 		packetSendSize = allSize;
-		LL_I2C_HandleTransfer(I2C1, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_NOSTARTSTOP);
+		LL_I2C_HandleTransfer(I2Cx, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_NOSTARTSTOP);
 	}
 
 	do {
-		while(!(LL_I2C_IsActiveFlag_TXE(I2C1)));
-		LL_I2C_TransmitData8(I2C1, *pBuffPtr);
+		while(!(LL_I2C_IsActiveFlag_TXE(I2Cx)));
+		LL_I2C_TransmitData8(I2Cx, *pBuffPtr);
 		pBuffPtr++;
 		allSize--;
 		packetSendSize--;
 
 	  if ((allSize != 0U) && (packetSendSize == 0U))
 	  {
-		while(!(LL_I2C_IsActiveFlag_TCR(I2C1)));
+		while(!(LL_I2C_IsActiveFlag_TCR(I2Cx)));
 		if ( allSize > 255U ) {
 			packetSendSize = 255U;
-			LL_I2C_HandleTransfer(I2C1, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_NOSTARTSTOP);
+			LL_I2C_HandleTransfer(I2Cx, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_NOSTARTSTOP);
 		}
 		else {
 			packetSendSize = allSize;
-			LL_I2C_HandleTransfer(I2C1, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_NOSTARTSTOP);
+			LL_I2C_HandleTransfer(I2Cx, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_NOSTARTSTOP);
 		}
 	  }
 	} while (allSize > 0);
+    /* No need to Check TC flag, with AUTOEND mode the stop is automatically generated */
+    /* Wait until STOPF flag is reset */
+	while(!(LL_I2C_IsActiveFlag_STOP(I2Cx)));
+	/* Clear STOP Flag */
+	LL_I2C_ClearFlag_STOP(I2Cx);
+	/* Clear Configuration Register 2 */
+}
 
-	while(!(LL_I2C_IsActiveFlag_STOP(I2C1)));
-	LL_I2C_ClearFlag_STOP(I2C1);
+//
+//  Send a byte to the command register
+//
+static void ssd1306_WriteCommand(uint8_t command) {
+	ssd1306_Buff_Write_LL_I2C(I2C1, SSD1306_I2C_ADDR, 0x00, &command, 1);
 }
 
 void delaySymple(void) {
@@ -148,11 +146,7 @@ void ssd1306_UpdateScreen(void) {
 		ssd1306_WriteCommand(0xB0 + i);
 		ssd1306_WriteCommand(0x00);
 		ssd1306_WriteCommand(0x10);
-
-		/*HAL_I2C_Mem_Write(&SSD1306_I2C_PORT, SSD1306_I2C_ADDR, 0x40, 1,
-				&SSD1306_Buffer[SSD1306_WIDTH * i], SSD1306_WIDTH, 100);*/
-
-		LL_I2C_BUFF_WRITE(I2C1, SSD1306_I2C_ADDR, &SSD1306_Buffer[SSD1306_WIDTH * i], SSD1306_WIDTH);
+		ssd1306_Buff_Write_LL_I2C(I2C1, SSD1306_I2C_ADDR, 0x40, &SSD1306_Buffer[SSD1306_WIDTH * i], SSD1306_WIDTH);
 	}
 }
 

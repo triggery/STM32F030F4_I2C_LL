@@ -57,7 +57,61 @@ static void MX_I2C1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void LL_I2C_Master_Transmit(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint8_t *pData, uint16_t Size) {
+	uint8_t *pBuffPtr = pData;
+	uint16_t allSize = Size;
+	uint16_t packetSendSize;
+	/* Set NBYTES to write and reload if hi2c->XferCount > MAX_NBYTE_SIZE */
+	if ( allSize > 255U ) {
+		packetSendSize = 255U;
+		LL_I2C_HandleTransfer(I2Cx, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_START_WRITE);
+	}
+	else {
+		packetSendSize = allSize;
+		LL_I2C_HandleTransfer(I2Cx, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_START_WRITE);
+	}
 
+	do {
+		while(!(LL_I2C_IsActiveFlag_TXE(I2Cx)));
+		LL_I2C_TransmitData8(I2Cx, *pBuffPtr);
+		pBuffPtr++;
+		allSize--;
+		packetSendSize--;
+
+	  if ((allSize != 0U) && (packetSendSize == 0U))
+	  {
+		while(!(LL_I2C_IsActiveFlag_TCR(I2Cx)));
+		if ( allSize > 255U ) {
+			packetSendSize = 255U;
+			LL_I2C_HandleTransfer(I2Cx, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_NOSTARTSTOP);
+		}
+		else {
+			packetSendSize = allSize;
+			LL_I2C_HandleTransfer(I2Cx, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_NOSTARTSTOP);
+		}
+	  }
+	} while (allSize > 0);
+	/* No need to Check TC flag, with AUTOEND mode the stop is automatically generated */
+	/* Wait until STOPF flag is reset */
+	while(!(LL_I2C_IsActiveFlag_STOP(I2Cx)));
+	/* Clear STOP Flag */
+	LL_I2C_ClearFlag_STOP(I2Cx);
+	/* Clear Configuration Register 2 */
+}
+
+#define TEA_ADDR (0x60 << 1)
+
+void setFrequency(float frequency) {
+	unsigned int frequencyB = 4 * (frequency * 1000000 + 225000) / 32768;
+	uint8_t data_arr[5];
+	data_arr[0] = frequencyB >> 8;
+	data_arr[1] = frequencyB & 0XFF;
+	data_arr[2] = 0xB0;
+	data_arr[3] = 0x10;
+	data_arr[4] = 0x00;
+	LL_I2C_Master_Transmit(I2C1, TEA_ADDR, data_arr, sizeof(data_arr));
+	//HAL_Delay(200);
+}
 /* USER CODE END 0 */
 
 /**
@@ -100,10 +154,11 @@ int main(void)
   ssd1306_SetCursor(1, 5);
   ssd1306_WriteString("Hello, Dima", Font_11x18, White);
   ssd1306_UpdateScreen();
+
+
+  //setFrequency(100.2);
   /* USER CODE END 2 */
  
- 
-
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
