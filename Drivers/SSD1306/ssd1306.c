@@ -12,7 +12,7 @@ static SSD1306_t SSD1306;
 void ssd1306_Buff_Write_LL_I2C(I2C_TypeDef *I2Cx, uint32_t SlaveAddr, uint8_t MemAddress, uint8_t *pData, uint16_t XferCount) {
 
 	/* Send Slave Address and Memory Address */
-	LL_I2C_HandleTransfer(I2Cx, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, 1, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_START_WRITE);
+	LL_I2C_HandleTransfer(I2Cx, SlaveAddr, LL_I2C_ADDRSLAVE_7BIT, 1, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_START_WRITE);
 	while(!(LL_I2C_IsActiveFlag_TXE(I2Cx)));
 	LL_I2C_TransmitData8(I2Cx,  MemAddress);
 	while(!(LL_I2C_IsActiveFlag_TCR(I2Cx)));
@@ -23,11 +23,11 @@ void ssd1306_Buff_Write_LL_I2C(I2C_TypeDef *I2Cx, uint32_t SlaveAddr, uint8_t Me
 	/* Set NBYTES to write and reload if hi2c->XferCount > MAX_NBYTE_SIZE */
 	if ( allSize > 255U ) {
 		packetSendSize = 255U;
-		LL_I2C_HandleTransfer(I2Cx, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_NOSTARTSTOP);
+		LL_I2C_HandleTransfer(I2Cx, SlaveAddr, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_NOSTARTSTOP);
 	}
 	else {
 		packetSendSize = allSize;
-		LL_I2C_HandleTransfer(I2Cx, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_NOSTARTSTOP);
+		LL_I2C_HandleTransfer(I2Cx, SlaveAddr, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_NOSTARTSTOP);
 	}
 
 	do {
@@ -42,11 +42,11 @@ void ssd1306_Buff_Write_LL_I2C(I2C_TypeDef *I2Cx, uint32_t SlaveAddr, uint8_t Me
 		while(!(LL_I2C_IsActiveFlag_TCR(I2Cx)));
 		if ( allSize > 255U ) {
 			packetSendSize = 255U;
-			LL_I2C_HandleTransfer(I2Cx, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_NOSTARTSTOP);
+			LL_I2C_HandleTransfer(I2Cx, SlaveAddr, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_NOSTARTSTOP);
 		}
 		else {
 			packetSendSize = allSize;
-			LL_I2C_HandleTransfer(I2Cx, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_NOSTARTSTOP);
+			LL_I2C_HandleTransfer(I2Cx, SlaveAddr, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_NOSTARTSTOP);
 		}
 	  }
 	} while (allSize > 0);

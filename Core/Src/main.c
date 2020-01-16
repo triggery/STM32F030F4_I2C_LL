@@ -64,11 +64,11 @@ void LL_I2C_Master_Transmit(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint8_t *pDa
 	/* Set NBYTES to write and reload if hi2c->XferCount > MAX_NBYTE_SIZE */
 	if ( allSize > 255U ) {
 		packetSendSize = 255U;
-		LL_I2C_HandleTransfer(I2Cx, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_START_WRITE);
+		LL_I2C_HandleTransfer(I2Cx, DevAddress, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_START_WRITE);
 	}
 	else {
 		packetSendSize = allSize;
-		LL_I2C_HandleTransfer(I2Cx, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_START_WRITE);
+		LL_I2C_HandleTransfer(I2Cx, DevAddress, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_START_WRITE);
 	}
 
 	do {
@@ -83,11 +83,11 @@ void LL_I2C_Master_Transmit(I2C_TypeDef *I2Cx, uint16_t DevAddress, uint8_t *pDa
 		while(!(LL_I2C_IsActiveFlag_TCR(I2Cx)));
 		if ( allSize > 255U ) {
 			packetSendSize = 255U;
-			LL_I2C_HandleTransfer(I2Cx, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_NOSTARTSTOP);
+			LL_I2C_HandleTransfer(I2Cx, DevAddress, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_RELOAD, LL_I2C_GENERATE_NOSTARTSTOP);
 		}
 		else {
 			packetSendSize = allSize;
-			LL_I2C_HandleTransfer(I2Cx, SSD1306_I2C_ADDR, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_NOSTARTSTOP);
+			LL_I2C_HandleTransfer(I2Cx, DevAddress, LL_I2C_ADDRSLAVE_7BIT, packetSendSize, LL_I2C_MODE_AUTOEND, LL_I2C_GENERATE_NOSTARTSTOP);
 		}
 	  }
 	} while (allSize > 0);
@@ -156,7 +156,7 @@ int main(void)
   ssd1306_UpdateScreen();
 
 
-  //setFrequency(100.2);
+//  setFrequency(100.2);
   /* USER CODE END 2 */
  
   /* Infinite loop */
