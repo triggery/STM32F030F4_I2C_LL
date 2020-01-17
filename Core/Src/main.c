@@ -37,12 +37,14 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define DIRECTION_NONE	0
-#define DIRECTION_UP	1
-#define DIRECTION_DOWN	2
-
 #define FM_MIN_FREQ		87.5
 #define FM_MAX_FREQ		108.0
+
+typedef enum {
+	ENCODER_DIR_NONE = 0,
+	ENCODER_DIR_UP,
+	ENCODER_DIR_DOWN
+} ENCODER_DIR;
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -64,6 +66,7 @@ static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 volatile float freq = 107.4;
 volatile uint16_t encoderValue = 0;
+volatile uint16_t encoderValueOld = 0;
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -118,8 +121,7 @@ void printFreqStr(float freq) {
     int iVal = (int)freq;
     int mVal = (int)((freq - iVal)*10);
     cnt = itoa_m(iVal, freqBuff);
-    freqBuff[cnt] = '.';
-    cnt++;
+    freqBuff[cnt++] = '.';
     cnt1 = itoa_m(mVal, freqBuff+cnt);
     cnt1 += cnt;
     freqBuff[cnt1++] = ' ';
@@ -131,6 +133,28 @@ void printFreqStr(float freq) {
 	ssd1306_WriteString(freqBuff, Font_11x18, White);
 	ssd1306_UpdateScreen();
 }
+
+ENCODER_DIR encoderHandler() {
+	static uint8_t cntTick = 0;
+	static ENCODER_DIR edir = ENCODER_DIR_NONE;
+
+	encoderValue = TIM3->CNT;
+	if ( (encoderValue != encoderValueOld) && (cntTick < 4) ) {
+	  cntTick++;
+	  if( encoderValue > encoderValueOld ) {
+		  edir = ENCODER_DIR_UP;
+	  }
+	  else if ( encoderValue < encoderValueOld ) {
+		  edir = ENCODER_DIR_DOWN;
+	  }
+	  encoderValueOld = encoderValue;
+	}
+	else if ( cntTick == 4 ) {
+	  cntTick = 0;
+	  return edir;
+	}
+	return ENCODER_DIR_NONE;
+}
 /* USER CODE END 0 */
 
 /**
@@ -140,9 +164,8 @@ void printFreqStr(float freq) {
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	uint16_t encoderValueOld = encoderValue;
-	uint8_t cntTick = 0;
-	uint8_t direction = DIRECTION_NONE;
+	ENCODER_DIR edir = ENCODER_DIR_NONE;
+
   /* USER CODE END 1 */
   
 
@@ -175,51 +198,29 @@ int main(void)
   /* USER CODE BEGIN 2 */
   ssd1306_Init();
   printFreqStr(freq);
-  /*ssd1306_SetCursor(1, 5);
-  ssd1306_WriteString("107.4 MHz", Font_11x18, White);
-  ssd1306_UpdateScreen();*/
-
-
   setFrequency(freq);
   /* USER CODE END 2 */
  
- 
-
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  encoderValue = TIM3->CNT;
-	  if ( (encoderValue != encoderValueOld) && (cntTick < 4) ) {
-
-		  cntTick++;
-
-		  if( encoderValue > encoderValueOld ) {
-			  direction = DIRECTION_UP;
+	  edir = encoderHandler();
+	  if( edir == ENCODER_DIR_UP ) {
+		  if(freq < FM_MAX_FREQ) {
+			  freq += 0.1;
+			  setFrequency(freq);
+			  printFreqStr(freq);
 		  }
-		  else if ( encoderValue < encoderValueOld ) {
-			  direction = DIRECTION_DOWN;
-		  }
-
-		  encoderValueOld = encoderValue;
 	  }
-	  else if ( cntTick == 4 ) {
-		  cntTick = 0;
-
-		  if( direction == DIRECTION_UP ) {
-			  if(freq < FM_MAX_FREQ) {
-				  freq += 0.1;
-			  }
+	  else if ( edir == ENCODER_DIR_DOWN ) {
+		  if(freq > FM_MIN_FREQ) {
+			  freq -= 0.1;
+			  setFrequency(freq);
+			  printFreqStr(freq);
 		  }
-		  else if ( direction == DIRECTION_DOWN ) {
-			  if(freq > FM_MIN_FREQ) {
-				  freq -= 0.1;
-			  }
-		  }
-
-		  setFrequency(freq);
-		  printFreqStr(freq);
 	  }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -346,7 +347,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 0 */
 
-  LL_TIM_InitTypeDef TIM_InitStruct = {0};
+  //LL_TIM_InitTypeDef TIM_InitStruct = {0};
 
   LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
 
@@ -377,7 +378,7 @@ static void MX_TIM3_Init(void)
   /* USER CODE BEGIN TIM3_Init 1 */
 
   /* USER CODE END TIM3_Init 1 */
-  LL_TIM_SetEncoderMode(TIM3, LL_TIM_ENCODERMODE_X4_TI12);
+  /*LL_TIM_SetEncoderMode(TIM3, LL_TIM_ENCODERMODE_X4_TI12);
   LL_TIM_IC_SetActiveInput(TIM3, LL_TIM_CHANNEL_CH1, LL_TIM_ACTIVEINPUT_DIRECTTI);
   LL_TIM_IC_SetPrescaler(TIM3, LL_TIM_CHANNEL_CH1, LL_TIM_ICPSC_DIV1);
   LL_TIM_IC_SetFilter(TIM3, LL_TIM_CHANNEL_CH1, LL_TIM_IC_FILTER_FDIV1);
@@ -393,8 +394,13 @@ static void MX_TIM3_Init(void)
   LL_TIM_Init(TIM3, &TIM_InitStruct);
   LL_TIM_DisableARRPreload(TIM3);
   LL_TIM_SetTriggerOutput(TIM3, LL_TIM_TRGO_RESET);
-  LL_TIM_DisableMasterSlaveMode(TIM3);
+  LL_TIM_DisableMasterSlaveMode(TIM3);*/
   /* USER CODE BEGIN TIM3_Init 2 */
+
+  TIM3->CCMR1 |= TIM_CCMR1_CC1S_0 | TIM_CCMR1_CC2S_0;
+  TIM3->CCER = (uint32_t)0x00000000;;	// &= (~(TIM_CCER_CC2E | TIM_CCER_CC2P));	//
+  TIM3->SMCR |= TIM_SMCR_SMS_0 | TIM_SMCR_SMS_1;
+  TIM3->ARR = (uint32_t)0x3FF;
   TIM3->CR1 |= TIM_CR1_CEN;
   /* USER CODE END TIM3_Init 2 */
 
