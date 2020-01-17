@@ -25,6 +25,8 @@
 /* USER CODE BEGIN Includes */
 #include "stm32f0xx_i2c_ll_impl.h"
 #include "ssd1306.h"
+#include "stdio.h"
+#include <string.h>
 
 /* USER CODE END Includes */
 
@@ -35,6 +37,12 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define DIRECTION_NONE	0
+#define DIRECTION_UP	1
+#define DIRECTION_DOWN	2
+
+#define FM_MIN_FREQ		87.5
+#define FM_MAX_FREQ		108.0
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -54,7 +62,8 @@ static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
-
+volatile float freq = 107.4;
+volatile uint16_t encoderValue = 0;
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -72,6 +81,56 @@ static void setFrequency(float frequency) {
 	LL_I2C_Master_Transmit(I2C1, TEA_ADDR, data_arr, sizeof(data_arr), true);
 	//HAL_Delay(200);
 }
+
+void reverse(char *s)
+{
+    int i, j;
+    char c;
+
+    for (i = 0, j = strlen(s)-1; i<j; i++, j--) {
+        c = s[i];
+        s[i] = s[j];
+        s[j] = c;
+    }
+}
+
+uint8_t itoa_m(int n, char *s)
+{
+    int i, sign;
+    memset(s, 0, strlen(s));
+    if ((sign = n) < 0)  			/* record sign */
+        n = -n;          			/* make n positive */
+    i = 0;
+    do {       						/* generate digits in reverse order */
+        s[i++] = n % 10 + '0';   	/* get next digit */
+    } while ((n /= 10) > 0);     	/* delete it */
+    if (sign < 0)
+        s[i++] = '-';
+    s[i] = '\0';
+    reverse(s);
+    return i;
+}
+
+void printFreqStr(float freq) {
+    char freqBuff[12] = {0};
+    uint8_t cnt, cnt1;
+
+    int iVal = (int)freq;
+    int mVal = (int)((freq - iVal)*10);
+    cnt = itoa_m(iVal, freqBuff);
+    freqBuff[cnt] = '.';
+    cnt++;
+    cnt1 = itoa_m(mVal, freqBuff+cnt);
+    cnt1 += cnt;
+    freqBuff[cnt1++] = ' ';
+    freqBuff[cnt1++] = 'M';
+    freqBuff[cnt1++] = 'H';
+    freqBuff[cnt1++] = 'z';
+
+	ssd1306_SetCursor(1, 5);
+	ssd1306_WriteString(freqBuff, Font_11x18, White);
+	ssd1306_UpdateScreen();
+}
 /* USER CODE END 0 */
 
 /**
@@ -81,7 +140,9 @@ static void setFrequency(float frequency) {
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+	uint16_t encoderValueOld = encoderValue;
+	uint8_t cntTick = 0;
+	uint8_t direction = DIRECTION_NONE;
   /* USER CODE END 1 */
   
 
@@ -110,14 +171,16 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   MX_TIM3_Init();
+
   /* USER CODE BEGIN 2 */
   ssd1306_Init();
-  ssd1306_SetCursor(1, 5);
-  ssd1306_WriteString("Hello, Dima", Font_11x18, White);
-  ssd1306_UpdateScreen();
+  printFreqStr(freq);
+  /*ssd1306_SetCursor(1, 5);
+  ssd1306_WriteString("107.4 MHz", Font_11x18, White);
+  ssd1306_UpdateScreen();*/
 
 
-  setFrequency(100.2);
+  setFrequency(freq);
   /* USER CODE END 2 */
  
  
@@ -126,6 +189,37 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  encoderValue = TIM3->CNT;
+	  if ( (encoderValue != encoderValueOld) && (cntTick < 4) ) {
+
+		  cntTick++;
+
+		  if( encoderValue > encoderValueOld ) {
+			  direction = DIRECTION_UP;
+		  }
+		  else if ( encoderValue < encoderValueOld ) {
+			  direction = DIRECTION_DOWN;
+		  }
+
+		  encoderValueOld = encoderValue;
+	  }
+	  else if ( cntTick == 4 ) {
+		  cntTick = 0;
+
+		  if( direction == DIRECTION_UP ) {
+			  if(freq < FM_MAX_FREQ) {
+				  freq += 0.1;
+			  }
+		  }
+		  else if ( direction == DIRECTION_DOWN ) {
+			  if(freq > FM_MIN_FREQ) {
+				  freq -= 0.1;
+			  }
+		  }
+
+		  setFrequency(freq);
+		  printFreqStr(freq);
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -301,7 +395,7 @@ static void MX_TIM3_Init(void)
   LL_TIM_SetTriggerOutput(TIM3, LL_TIM_TRGO_RESET);
   LL_TIM_DisableMasterSlaveMode(TIM3);
   /* USER CODE BEGIN TIM3_Init 2 */
-
+  TIM3->CR1 |= TIM_CR1_CEN;
   /* USER CODE END TIM3_Init 2 */
 
 }
