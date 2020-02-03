@@ -142,10 +142,10 @@ ENCODER_DIR encoderHandler() {
 	if ( (encoderValue != encoderValueOld) && (cntTick < 4) ) {
 	  cntTick++;
 	  if( encoderValue > encoderValueOld ) {
-		  edir = ENCODER_DIR_UP;
+		  edir = ENCODER_DIR_DOWN;	//ENCODER_DIR_UP;
 	  }
 	  else if ( encoderValue < encoderValueOld ) {
-		  edir = ENCODER_DIR_DOWN;
+		  edir = ENCODER_DIR_UP;	//ENCODER_DIR_DOWN;
 	  }
 	  encoderValueOld = encoderValue;
 	}
@@ -347,7 +347,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 0 */
 
-  //LL_TIM_InitTypeDef TIM_InitStruct = {0};
+  LL_TIM_InitTypeDef TIM_InitStruct = {0};
 
   LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
 
@@ -378,7 +378,7 @@ static void MX_TIM3_Init(void)
   /* USER CODE BEGIN TIM3_Init 1 */
 
   /* USER CODE END TIM3_Init 1 */
-  /*LL_TIM_SetEncoderMode(TIM3, LL_TIM_ENCODERMODE_X4_TI12);
+  LL_TIM_SetEncoderMode(TIM3, LL_TIM_ENCODERMODE_X4_TI12);
   LL_TIM_IC_SetActiveInput(TIM3, LL_TIM_CHANNEL_CH1, LL_TIM_ACTIVEINPUT_DIRECTTI);
   LL_TIM_IC_SetPrescaler(TIM3, LL_TIM_CHANNEL_CH1, LL_TIM_ICPSC_DIV1);
   LL_TIM_IC_SetFilter(TIM3, LL_TIM_CHANNEL_CH1, LL_TIM_IC_FILTER_FDIV1);
@@ -394,13 +394,13 @@ static void MX_TIM3_Init(void)
   LL_TIM_Init(TIM3, &TIM_InitStruct);
   LL_TIM_DisableARRPreload(TIM3);
   LL_TIM_SetTriggerOutput(TIM3, LL_TIM_TRGO_RESET);
-  LL_TIM_DisableMasterSlaveMode(TIM3);*/
+  LL_TIM_DisableMasterSlaveMode(TIM3);
   /* USER CODE BEGIN TIM3_Init 2 */
 
-  TIM3->CCMR1 |= TIM_CCMR1_CC1S_0 | TIM_CCMR1_CC2S_0;
+  /*TIM3->CCMR1 |= TIM_CCMR1_CC1S_0 | TIM_CCMR1_CC2S_0;
   TIM3->CCER = (uint32_t)0x00000000;;	// &= (~(TIM_CCER_CC2E | TIM_CCER_CC2P));	//
   TIM3->SMCR |= TIM_SMCR_SMS_0 | TIM_SMCR_SMS_1;
-  TIM3->ARR = (uint32_t)0x3FF;
+  TIM3->ARR = (uint32_t)0x3FF;*/
   TIM3->CR1 |= TIM_CR1_CEN;
   /* USER CODE END TIM3_Init 2 */
 
